@@ -20,106 +20,110 @@ namespace DlibFaceLandmarkDetectorExample
     [RequireComponent(typeof(WebCamTextureToMatHelper))]
     public class ARHeadExample : MonoBehaviour
     {
+        // Skullmoji mask effect
+        public bool displaySkullEffect;
+        public Toggle displaySkullEffectToggle;
+
         /// <summary>
         /// Determines if displays face points.
         /// </summary>
         public bool displayFacePoints;
-        
+
         /// <summary>
         /// The display face points toggle.
         /// </summary>
         public Toggle displayFacePointsToggle;
-        
+
         /// <summary>
         /// Determines if displays display axes
         /// </summary>
         public bool displayAxes;
-        
+
         /// <summary>
         /// The display axes toggle.
         /// </summary>
         public Toggle displayAxesToggle;
-        
+
         /// <summary>
         /// Determines if displays head.
         /// </summary>
         public bool displayHead;
-        
+
         /// <summary>
         /// The display head toggle.
         /// </summary>
         public Toggle displayHeadToggle;
-        
+
         /// <summary>
         /// Determines if displays effects.
         /// </summary>
         public bool displayEffects;
-        
+
         /// <summary>
         /// The display effects toggle.
         /// </summary>
         public Toggle displayEffectsToggle;
-        
+
         /// <summary>
         /// The axes.
         /// </summary>
         public GameObject axes;
-        
+
         /// <summary>
         /// The head.
         /// </summary>
         public GameObject head;
-        
+
         /// <summary>
         /// The right eye.
         /// </summary>
         public GameObject rightEye;
-        
+
         /// <summary>
         /// The left eye.
         /// </summary>
         public GameObject leftEye;
-        
+
         /// <summary>
         /// The mouth.
         /// </summary>
         public GameObject mouth;
-        
+
         /// <summary>
         /// The AR camera.
         /// </summary>
         public Camera ARCamera;
-        
+
         /// <summary>
         /// The AR game object.
         /// </summary>
         public GameObject ARGameObject;
-        
+
         /// <summary>
         /// Determines if request the AR camera moving.
         /// </summary>
         public bool shouldMoveARCamera;
-        
+
         /// <summary>
         /// The mouth particle system.
         /// </summary>
         ParticleSystem[] mouthParticleSystem;
-        
+
         /// <summary>
         /// The texture.
         /// </summary>
         Texture2D texture;
-        
+
         /// <summary>
         /// The face landmark detector.
         /// </summary>
         FaceLandmarkDetector faceLandmarkDetector;
-        
+
         /// <summary>
         /// The cameraparam matrix.
         /// </summary>
         Mat camMatrix;
-        
+
         /// <summary>
         /// The distortion coeffs.
         /// </summary>
@@ -129,12 +133,12 @@ namespace DlibFaceLandmarkDetectorExample
         /// The matrix that inverts the Y axis.
         /// </summary>
         Matrix4x4 invertYM;
-        
+
         /// <summary>
         /// The matrix that inverts the Z axis.
         /// </summary>
         Matrix4x4 invertZM;
-        
+
         /// <summary>
         /// The transformation matrix.
         /// </summary>
@@ -144,54 +148,62 @@ namespace DlibFaceLandmarkDetectorExample
         /// The transformation matrix for AR.
         /// </summary>
         Matrix4x4 ARM;
-        
+
         /// <summary>
         /// The 3d face object points.
         /// </summary>
         MatOfPoint3f objectPoints;
-        
+
         /// <summary>
         /// The image points.
         /// </summary>
         MatOfPoint2f imagePoints;
-        
+
         /// <summary>
         /// The rvec.
         /// </summary>
         Mat rvec;
-        
+
         /// <summary>
         /// The tvec.
         /// </summary>
         Mat tvec;
-        
+
         /// <summary>
         /// The rot mat.
         /// </summary>
         Mat rotMat;
-        
+
         /// <summary>
         /// The webcam texture to mat helper.
         /// </summary>
         WebCamTextureToMatHelper webCamTextureToMatHelper;
-        
+
         /// <summary>
         /// The shape_predictor_68_face_landmarks_dat_filepath.
         /// </summary>
         string shape_predictor_68_face_landmarks_dat_filepath;
 
+        //***************Your Variables*****************//
+        public GameObject Skull;
+
+
         #if UNITY_WEBGL && !UNITY_EDITOR
         private Stack<IEnumerator> coroutines = new Stack<IEnumerator> ();
         #endif
-        
+
         // Use this for initialization
         void Start ()
         {
+           // GameObject.Find("Cube").SetActive(false);
             displayFacePointsToggle.isOn = displayFacePoints;
             displayAxesToggle.isOn = displayAxes;
             displayHeadToggle.isOn = displayHead;
             displayEffectsToggle.isOn = displayEffects;
-            
+
+            // skull effect toggle
+            displaySkullEffectToggle.isOn = displaySkullEffect;
+
             #if UNITY_WEBGL && !UNITY_EDITOR
             var getFilePath_Coroutine = DlibFaceLandmarkDetector.Utils.getFilePathAsync ("shape_predictor_68_face_landmarks.dat", (result) => {
                 coroutines.Clear ();
@@ -206,7 +218,7 @@ namespace DlibFaceLandmarkDetectorExample
             Run ();
             #endif
         }
-        
+
         private void Run ()
         {
             //set 3d face object points.
@@ -223,33 +235,33 @@ namespace DlibFaceLandmarkDetectorExample
             rvec = new Mat ();
             tvec = new Mat ();
             rotMat = new Mat (3, 3, CvType.CV_64FC1);
-            
+
             faceLandmarkDetector = new FaceLandmarkDetector (shape_predictor_68_face_landmarks_dat_filepath);
-            
+
             webCamTextureToMatHelper = gameObject.GetComponent<WebCamTextureToMatHelper> ();
             webCamTextureToMatHelper.Initialize ();
         }
-        
+
         /// <summary>
         /// Raises the web cam texture to mat helper initialized event.
         /// </summary>
         public void OnWebCamTextureToMatHelperInitialized ()
         {
             Debug.Log ("OnWebCamTextureToMatHelperInitialized");
-            
+
             Mat webCamTextureMat = webCamTextureToMatHelper.GetMat ();
-            
+
             texture = new Texture2D (webCamTextureMat.cols (), webCamTextureMat.rows (), TextureFormat.RGBA32, false);
-            
+
             gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
-            
+
             gameObject.transform.localScale = new Vector3 (webCamTextureMat.cols (), webCamTextureMat.rows (), 1);
             Debug.Log ("Screen.width " + Screen.width + " Screen.height " + Screen.height + " Screen.orientation " + Screen.orientation);
-            
-            
+
+
             float width = webCamTextureMat.width ();
             float height = webCamTextureMat.height ();
-            
+
             float imageSizeScale = 1.0f;
             float widthScale = (float)Screen.width / width;
             float heightScale = (float)Screen.height / height;
@@ -259,8 +271,8 @@ namespace DlibFaceLandmarkDetectorExample
             } else {
                 Camera.main.orthographicSize = height / 2;
             }
-            
-            
+
+
             //set cameraparam
             int max_d = (int)Mathf.Max (width, height);
             double fx = max_d;
@@ -278,12 +290,12 @@ namespace DlibFaceLandmarkDetectorExample
             camMatrix.put (2, 1, 0);
             camMatrix.put (2, 2, 1.0f);
             Debug.Log ("camMatrix " + camMatrix.dump ());
-            
-            
+
+
             distCoeffs = new MatOfDouble (0, 0, 0, 0);
             Debug.Log ("distCoeffs " + distCoeffs.dump ());
-            
-            
+
+
             //calibration camera
             Size imageSize = new Size (width * imageSizeScale, height * imageSizeScale);
             double apertureWidth = 0;
@@ -293,9 +305,9 @@ namespace DlibFaceLandmarkDetectorExample
             double[] focalLength = new double[1];
             Point principalPoint = new Point (0, 0);
             double[] aspectratio = new double[1];
-            
+
             Calib3d.calibrationMatrixValues (camMatrix, imageSize, apertureWidth, apertureHeight, fovx, fovy, focalLength, principalPoint, aspectratio);
-            
+
             Debug.Log ("imageSize " + imageSize.ToString ());
             Debug.Log ("apertureWidth " + apertureWidth);
             Debug.Log ("apertureHeight " + apertureHeight);
@@ -304,51 +316,51 @@ namespace DlibFaceLandmarkDetectorExample
             Debug.Log ("focalLength " + focalLength [0]);
             Debug.Log ("principalPoint " + principalPoint.ToString ());
             Debug.Log ("aspectratio " + aspectratio [0]);
-            
-            
-            //To convert the difference of the FOV value of the OpenCV and Unity. 
+
+
+            //To convert the difference of the FOV value of the OpenCV and Unity.
             double fovXScale = (2.0 * Mathf.Atan ((float)(imageSize.width / (2.0 * fx)))) / (Mathf.Atan2 ((float)cx, (float)fx) + Mathf.Atan2 ((float)(imageSize.width - cx), (float)fx));
             double fovYScale = (2.0 * Mathf.Atan ((float)(imageSize.height / (2.0 * fy)))) / (Mathf.Atan2 ((float)cy, (float)fy) + Mathf.Atan2 ((float)(imageSize.height - cy), (float)fy));
-            
+
             Debug.Log ("fovXScale " + fovXScale);
             Debug.Log ("fovYScale " + fovYScale);
-            
-            
+
+
             //Adjust Unity Camera FOV https://github.com/opencv/opencv/commit/8ed1945ccd52501f5ab22bdec6aa1f91f1e2cfd4
             if (widthScale < heightScale) {
                 ARCamera.fieldOfView = (float)(fovx [0] * fovXScale);
             } else {
                 ARCamera.fieldOfView = (float)(fovy [0] * fovYScale);
             }
-            
+
 
             invertYM = Matrix4x4.TRS (Vector3.zero, Quaternion.identity, new Vector3 (1, -1, 1));
             Debug.Log ("invertYM " + invertYM.ToString ());
 
             invertZM = Matrix4x4.TRS (Vector3.zero, Quaternion.identity, new Vector3 (1, 1, -1));
             Debug.Log ("invertZM " + invertZM.ToString ());
-            
-            
+
+
             axes.SetActive (false);
             head.SetActive (false);
             rightEye.SetActive (false);
             leftEye.SetActive (false);
             mouth.SetActive (false);
-            
+
             mouthParticleSystem = mouth.GetComponentsInChildren<ParticleSystem> (true);
         }
-        
+
         /// <summary>
         /// Raises the web cam texture to mat helper disposed event.
         /// </summary>
         public void OnWebCamTextureToMatHelperDisposed ()
         {
             Debug.Log ("OnWebCamTextureToMatHelperDisposed");
-            
+
             camMatrix.Dispose ();
             distCoeffs.Dispose ();
         }
-        
+
         /// <summary>
         /// Raises the web cam texture to mat helper error occurred event.
         /// </summary>
@@ -356,28 +368,28 @@ namespace DlibFaceLandmarkDetectorExample
         public void OnWebCamTextureToMatHelperErrorOccurred(WebCamTextureToMatHelper.ErrorCode errorCode){
             Debug.Log ("OnWebCamTextureToMatHelperErrorOccurred " + errorCode);
         }
-        
+
         // Update is called once per frame
         void Update ()
         {
             if (webCamTextureToMatHelper.IsPlaying () && webCamTextureToMatHelper.DidUpdateThisFrame ()) {
-                
+
                 Mat rgbaMat = webCamTextureToMatHelper.GetMat ();
-                
-                
+
+
                 OpenCVForUnityUtils.SetImage (faceLandmarkDetector, rgbaMat);
-                
+
                 //detect face rects
                 List<UnityEngine.Rect> detectResult = faceLandmarkDetector.Detect ();
-                
+
                 if (detectResult.Count > 0) {
-                    
+
                     //detect landmark points
                     List<Vector2> points = faceLandmarkDetector.DetectLandmark (detectResult [0]);
-                    
+
                     if (displayFacePoints)
                         OpenCVForUnityUtils.DrawFaceLandmark (rgbaMat, points, new Scalar (0, 255, 0, 255), 2);
-                    
+
                     imagePoints.fromArray (
                         new Point ((points [38].x + points [41].x) / 2, (points [38].y + points [41].y) / 2),//l eye
                         new Point ((points [43].x + points [46].x) / 2, (points [43].y + points [46].y) / 2),//r eye
@@ -388,79 +400,102 @@ namespace DlibFaceLandmarkDetectorExample
                         new Point (points [0].x, points [0].y),//l ear
                         new Point (points [16].x, points [16].y)//r ear
                         );
-                    
+
                     // Estimate head pose.
                     Calib3d.solvePnP (objectPoints, imagePoints, camMatrix, distCoeffs, rvec, tvec);
-                    
-                    
+
+
                     if (tvec.get (2, 0) [0] > 0) {
-                        
+
+                        // displayEffects: Display eye AR effects
                         if (Mathf.Abs ((float)(points [43].y - points [46].y)) > Mathf.Abs ((float)(points [42].x - points [45].x)) / 6.0) {
                             if (displayEffects)
                                 rightEye.SetActive (true);
                         }
-                        
+
                         if (Mathf.Abs ((float)(points [38].y - points [41].y)) > Mathf.Abs ((float)(points [39].x - points [36].x)) / 6.0) {
                             if (displayEffects)
                                 leftEye.SetActive (true);
                         }
-                        if (displayHead)
-                            head.SetActive (true);
-                        if (displayAxes)
-                            axes.SetActive (true);
-                        
-                        
-                        float noseDistance = Mathf.Abs ((float)(points [27].y - points [33].y));
-                        float mouseDistance = Mathf.Abs ((float)(points [62].y - points [66].y));
-                        if (mouseDistance > noseDistance / 5.0) {
-                            if (displayEffects) {
-                                mouth.SetActive (true);
-                                foreach (ParticleSystem ps in mouthParticleSystem) {
+
+                        // displayEffects: measure mouth and nose distances
+                        float noseDistance = Mathf.Abs((float)(points[27].y - points[33].y));
+                        float mouthDistance = Mathf.Abs((float)(points[62].y - points[66].y));
+
+                        // displayEffects: Display mouth AR effects
+                        if (mouthDistance > noseDistance / 5.0)
+                        {
+                            if (displayEffects)
+                            {
+                                mouth.SetActive(true);
+                                foreach (ParticleSystem ps in mouthParticleSystem)
+                                {
                                     ps.enableEmission = true;
-                                    ps.startSize = 40 * (mouseDistance / noseDistance);
+                                    ps.startSize = 40 * (mouthDistance / noseDistance);
                                 }
                             }
-                        } else {
-                            if (displayEffects) {
-                                foreach (ParticleSystem ps in mouthParticleSystem) {
+                        }
+                        else
+                        {
+                            if (displayEffects)
+                            {
+                                foreach (ParticleSystem ps in mouthParticleSystem)
+                                {
                                     ps.enableEmission = false;
                                 }
                             }
                         }
 
-                        Calib3d.Rodrigues (rvec, rotMat);
-                        
+                        // Display head model
+                        if (displayHead)
+                        {
+                            head.SetActive (true);
+                        }
+                        // Display axes
+                        if (displayAxes)
+                        {
+                            axes.SetActive (true);
+                        }
+
+                        // Display skull effect
+                        if (displaySkullEffect)
+                        {
+                            Skull.SetActive(true);
+                        }
+
+                            Calib3d.Rodrigues (rvec, rotMat);
+
                         transformationM.SetRow (0, new Vector4 ((float)rotMat.get (0, 0) [0], (float)rotMat.get (0, 1) [0], (float)rotMat.get (0, 2) [0], (float)tvec.get (0, 0) [0]));
                         transformationM.SetRow (1, new Vector4 ((float)rotMat.get (1, 0) [0], (float)rotMat.get (1, 1) [0], (float)rotMat.get (1, 2) [0], (float)tvec.get (1, 0) [0]));
                         transformationM.SetRow (2, new Vector4 ((float)rotMat.get (2, 0) [0], (float)rotMat.get (2, 1) [0], (float)rotMat.get (2, 2) [0], (float)tvec.get (2, 0) [0]));
                         transformationM.SetRow (3, new Vector4 (0, 0, 0, 1));
-                        
+
                         // right-handed coordinates system (OpenCV) to left-handed one (Unity)
                         ARM = invertYM * transformationM;
-                        
+
                         // Apply Z axis inverted matrix.
                         ARM = ARM * invertZM;
-                        
+
                         if (shouldMoveARCamera) {
 
                             ARM = ARGameObject.transform.localToWorldMatrix * ARM.inverse;
-                            
+
                             ARUtils.SetTransformFromMatrix (ARCamera.transform, ref ARM);
                         } else {
 
                             ARM = ARCamera.transform.localToWorldMatrix * ARM;
-                            
+
                             ARUtils.SetTransformFromMatrix (ARGameObject.transform, ref ARM);
                         }
                     }
                 }
-                
+
                 Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " SO:" + Screen.orientation, new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 0.5, new Scalar (255, 255, 255, 255), 1, Imgproc.LINE_AA, false);
-                
+
                 OpenCVForUnity.Utils.matToTexture2D (rgbaMat, texture, webCamTextureToMatHelper.GetBufferColors ());
             }
         }
-        
+
         /// <summary>
         /// Raises the disable event.
         /// </summary>
@@ -468,7 +503,7 @@ namespace DlibFaceLandmarkDetectorExample
         {
             if (webCamTextureToMatHelper != null)
                 webCamTextureToMatHelper.Dispose ();
-            
+
             if (faceLandmarkDetector != null)
                 faceLandmarkDetector.Dispose ();
 
@@ -479,7 +514,7 @@ namespace DlibFaceLandmarkDetectorExample
             }
             #endif
         }
-        
+
         /// <summary>
         /// Raises the back button click event.
         /// </summary>
@@ -491,7 +526,7 @@ namespace DlibFaceLandmarkDetectorExample
             Application.LoadLevel ("DlibFaceLandmarkDetectorExample");
             #endif
         }
-        
+
         /// <summary>
         /// Raises the play button click event.
         /// </summary>
@@ -499,7 +534,7 @@ namespace DlibFaceLandmarkDetectorExample
         {
             webCamTextureToMatHelper.Play ();
         }
-        
+
         /// <summary>
         /// Raises the pause button click event.
         /// </summary>
@@ -507,7 +542,7 @@ namespace DlibFaceLandmarkDetectorExample
         {
             webCamTextureToMatHelper.Pause ();
         }
-        
+
         /// <summary>
         /// Raises the stop button click event.
         /// </summary>
@@ -515,7 +550,7 @@ namespace DlibFaceLandmarkDetectorExample
         {
             webCamTextureToMatHelper.Stop ();
         }
-        
+
         /// <summary>
         /// Raises the change camera button click event.
         /// </summary>
@@ -523,7 +558,7 @@ namespace DlibFaceLandmarkDetectorExample
         {
             webCamTextureToMatHelper.Initialize (null, webCamTextureToMatHelper.requestedWidth, webCamTextureToMatHelper.requestedHeight, !webCamTextureToMatHelper.requestedIsFrontFacing);
         }
-        
+
         /// <summary>
         /// Raises the display face points toggle value changed event.
         /// </summary>
@@ -535,7 +570,7 @@ namespace DlibFaceLandmarkDetectorExample
                 displayFacePoints = false;
             }
         }
-        
+
         /// <summary>
         /// Raises the display axes toggle value changed event.
         /// </summary>
@@ -548,7 +583,7 @@ namespace DlibFaceLandmarkDetectorExample
                 axes.SetActive (false);
             }
         }
-        
+
         /// <summary>
         /// Raises the display head toggle value changed event.
         /// </summary>
@@ -561,7 +596,7 @@ namespace DlibFaceLandmarkDetectorExample
                 head.SetActive (false);
             }
         }
-        
+
         /// <summary>
         /// Raises the display effects toggle value changed event.
         /// </summary>
@@ -574,6 +609,18 @@ namespace DlibFaceLandmarkDetectorExample
                 rightEye.SetActive (false);
                 leftEye.SetActive (false);
                 mouth.SetActive (false);
+            }
+        }
+
+        public void OnDisplaySkullEffectToggleValueChanged ()
+        {
+            if (displaySkullEffectToggle.isOn)
+            {
+                displaySkullEffect = true;
+            } else
+            {
+                displaySkullEffect = false;
+                Skull.SetActive(false);
             }
         }
     }
