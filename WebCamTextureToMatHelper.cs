@@ -30,7 +30,7 @@ namespace DlibFaceLandmarkDetectorExample
         /// <summary>
         /// Set the requested to using the front camera.
         /// </summary>
-        public bool requestedIsFrontFacing = false;
+		public bool requestedIsFrontFacing = false;
 
         /// <summary>
         /// Set the requested frame rate of the camera device (in frames per second).
@@ -156,7 +156,7 @@ namespace DlibFaceLandmarkDetectorExample
         /// <param name="requestedHeight">Requested height.</param>
         /// <param name="requestedIsFrontFacing">If set to <c>true</c> requested to using the front camera.</param>
         /// <param name="requestedFPS">Requested FPS.</param>
-        public virtual void Initialize (string deviceName, int requestedWidth, int requestedHeight, bool requestedIsFrontFacing = false, int requestedFPS = 30)
+		public virtual void Initialize (string deviceName, int requestedWidth, int requestedHeight, bool requestedIsFrontFacing = false, int requestedFPS = 30)
         {
             if (isInitWaiting)
                 return;
